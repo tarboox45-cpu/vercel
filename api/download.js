@@ -1,3 +1,5 @@
+[file name]: download.js
+[file content begin]
 export default function handler(req, res) {
   try {
     console.log('Download endpoint called');
@@ -7,7 +9,7 @@ export default function handler(req, res) {
     // تحقق بسيط جداً من وجود التوكن
     if (!token || token.length < 10) {
       console.log('No valid token provided');
-      return res.status(401).send(`#!/bin/bash
+      return res.status(401).send(String.raw`#!/bin/bash
 echo "========================================"
 echo "ERROR: UNAUTHORIZED ACCESS"
 echo "========================================"
@@ -21,8 +23,8 @@ exit 1`);
     
     console.log(`Token validated: ${token.substring(0, 10)}...`);
     
-    // نص الـ shell script بدون أي تسلسلات \033
-    const shellScript = `#!/bin/bash
+    // استخدام String.raw لمنع مشاكل escape sequences في JavaScript
+    const shellScript = String.raw`#!/bin/bash
 #
 # TARBOO - Ultimate Server Management Suite v6.0
 # Professional Pterodactyl, CtrlPanel & SSL Management
@@ -3011,6 +3013,9 @@ check_network_connectivity() {
         if curl -s --connect-timeout 5 --max-time 10 "$endpoint" > /dev/null 2>&1; then
             ok "Connected to: $endpoint"
             return 0
+        else
+            warn "Network connectivity check failed"
+            return 1
         fi
     done
     
@@ -4561,9 +4566,6 @@ uninstall_theme() {
 # ============================================
 # MODIFIED THEME MANAGEMENT MENU
 # ============================================
-# ============================================
-# MODIFIED THEME MANAGEMENT MENU
-# ============================================
 themes_menu() {
     menu_header "Theme Management"
     
@@ -5482,7 +5484,7 @@ main_menu`;
   } catch (error) {
     console.error('SERVER ERROR in download.js:', error.message);
     
-    res.status(500).send(`#!/bin/bash
+    res.status(500).send(String.raw`#!/bin/bash
 echo "========================================"
 echo "SERVER ERROR"
 echo "========================================"
