@@ -1,5 +1,3 @@
-[file name]: download.js
-[file content begin]
 export default function handler(req, res) {
   try {
     console.log('Download endpoint called');
