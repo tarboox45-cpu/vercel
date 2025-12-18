@@ -1,23 +1,27 @@
 export default function handler(req, res) {
   try {
+    console.log('Download endpoint called');
     const { token } = req.query;
+    const authHeader = req.headers.authorization;
     
-    // التحقق الأساسي من التوكن
+    // تحقق بسيط جداً من وجود التوكن
     if (!token || token.length < 10) {
-      return res.status(403).send(`#!/bin/bash
-echo "========================================="
-echo "❌ ACCESS DENIED - TARBOO INSTALLER"
-echo "========================================="
-echo "Invalid or missing authentication token."
+      console.log('No valid token provided');
+      return res.status(401).send(`#!/bin/bash
+echo "========================================"
+echo "ERROR: UNAUTHORIZED ACCESS"
+echo "========================================"
+echo "Missing or invalid installation token."
 echo ""
-echo "Please visit the installer page and enter"
-echo "the correct password to get a valid token."
-echo "========================================="
+echo "Please return to the installer page and"
+echo "generate a new token with your password."
+echo "========================================"
 exit 1`);
     }
     
-    // 📁 الجزء المهم: استخدم هذا النص المضمن بدلاً من متغير shellScript الطويل
-    // تأكد من أن جميع \033 أصبحت \\033
+    console.log(`Token validated: ${token.substring(0, 10)}...`);
+    
+    // نص الـ shell script بدون أي تسلسلات \033
     const shellScript = `#!/bin/bash
 #
 # TARBOO - Ultimate Server Management Suite v6.0
@@ -5467,27 +5471,28 @@ initialize
 # Run main menu
 main_menu`;
 
-    // تعيين الهيدرات الصحيحة
+    // إرجاع النص بنجاح
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('X-Installer-Version', '6.0');
+    res.setHeader('X-Installer-Status', 'active');
     
+    console.log('Sending shell script response');
     res.status(200).send(shellScript);
     
   } catch (error) {
-    console.error('Download error:', error);
+    console.error('SERVER ERROR in download.js:', error.message);
     
     res.status(500).send(`#!/bin/bash
-echo "========================================="
-echo "❌ INSTALLER DOWNLOAD ERROR"
-echo "========================================="
-echo "Failed to generate installer script."
-echo "Please try again in a few minutes."
+echo "========================================"
+echo "SERVER ERROR"
+echo "========================================"
+echo "The installer server encountered an error."
 echo ""
+echo "Details: ${error.message}"
+echo ""
+echo "Please try again in a few minutes."
 echo "If the problem persists, contact support."
-echo "========================================="
+echo "========================================"
 exit 1`);
   }
 }
