@@ -1,36 +1,24 @@
 export default function handler(req, res) {
   try {
-    const { token, key } = req.query;
-    const authHeader = req.headers.authorization;
+    const { token } = req.query;
     
-    // الباسوورد من Environment Variables
-    const SECRET_PASSWORD = process.env.TARBOO_PASSWORD || "TARBOO_2024_SECURE";
-    
-    // التحقق من المصادقة
-    let isAuthenticated = false;
-    
-    // الطريقة 1: توكن من verify.js
-    if (token && token.length > 10) {
-      // هنا يمكنك إضافة منطق التحقق من صحة التوكن
-      // مثل التحقق من الوقت، أو تخزين التوكنات الصالحة
-      isAuthenticated = true;
-    }
-    
-    // الطريقة 2: باسوورد مباشر في query (أقل أماناً)
-    if (key && key === SECRET_PASSWORD) {
-      isAuthenticated = true;
-    }
-    
-    // الطريقة 3: Authorization header
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const bearerToken = authHeader.substring(7);
-      // تحقق من التوكن
-      isAuthenticated = true;
-    }
-    
-    if (!isAuthenticated) {
-      // إرجاع نص shell script يرفض التثبيت
+    // التحقق الأساسي من التوكن
+    if (!token || token.length < 10) {
       return res.status(403).send(`#!/bin/bash
+echo "========================================="
+echo "❌ ACCESS DENIED - TARBOO INSTALLER"
+echo "========================================="
+echo "Invalid or missing authentication token."
+echo ""
+echo "Please visit the installer page and enter"
+echo "the correct password to get a valid token."
+echo "========================================="
+exit 1`);
+    }
+    
+    // 📁 الجزء المهم: استخدم هذا النص المضمن بدلاً من متغير shellScript الطويل
+    // تأكد من أن جميع \033 أصبحت \\033
+    const shellScript = `#!/bin/bash
 #
 # TARBOO - Ultimate Server Management Suite v6.0
 # Professional Pterodactyl, CtrlPanel & SSL Management
@@ -5479,13 +5467,12 @@ initialize
 # Run main menu
 main_menu`;
 
-    // تعيين الهيدرات المناسبة
+    // تعيين الهيدرات الصحيحة
     res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('X-Installer-Version', '6.0');
-    res.setHeader('X-TARBOO-Auth', 'verified');
     
     res.status(200).send(shellScript);
     
@@ -5496,10 +5483,10 @@ main_menu`;
 echo "========================================="
 echo "❌ INSTALLER DOWNLOAD ERROR"
 echo "========================================="
-echo "Failed to download installer."
-echo "Error: ${error.message}"
+echo "Failed to generate installer script."
+echo "Please try again in a few minutes."
 echo ""
-echo "Please try again or contact support."
+echo "If the problem persists, contact support."
 echo "========================================="
 exit 1`);
   }
