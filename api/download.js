@@ -23,8 +23,7 @@ exit 1`);
     
     console.log(`[TARBOO] Token validated: ${token.substring(0, 15)}...`);
     
-    // 2. النص الأساسي للمثبت - بدون أي مشاكل في بناء الجملة
-    // تأكد من أن جميع التعابير ${...} مكتملة
+    // 2. النص الأساسي للمثبت - مع إصلاح التسلسلات الثمانية
     const currentDate = new Date().toISOString();
     
     const shellScript = `#!/bin/bash
@@ -125,19 +124,19 @@ MONITORING_ENABLED=false
 # COLOR & STYLING LIBRARY
 # ============================================
 # Primary Colors
-RED=' \x1b[0;31m'
-GREEN=' \x1b[0;32m'
-YELLOW=' \x1b[1;33m'
-BLUE=' \x1b[0;34m'
-CYAN=' \x1b[0;36m'
-MAGENTA=' \x1b[0;35m'
-WHITE=' \x1b[1;37m'
-NC=' \x1b[0m'
+RED='\\x1b[0;31m'
+GREEN='\\x1b[0;32m'
+YELLOW='\\x1b[1;33m'
+BLUE='\\x1b[0;34m'
+CYAN='\\x1b[0;36m'
+MAGENTA='\\x1b[0;35m'
+WHITE='\\x1b[1;37m'
+NC='\\x1b[0m'
 
 # Styles
-BOLD=' \x1b[1m'
-UNDERLINE=' \x1b[4m'
-BLINK=' \x1b[5m'
+BOLD='\\x1b[1m'
+UNDERLINE='\\x1b[4m'
+BLINK='\\x1b[5m'
 
 # Custom Panel Colors
 HEADER_COLOR="${CYAN}${BOLD}"
@@ -267,7 +266,7 @@ progress_bar() {
         echo -ne "${GREEN}["
         for ((j = 0; j < i; j++)); do echo -ne "█"; done
         for ((j = i; j < width; j++)); do echo -ne "░"; done
-        echo -ne "] ${progress}% ${NC}\r"
+        echo -ne "] ${progress}% ${NC}\\r"
         sleep "$duration"
     done
     echo
@@ -284,7 +283,7 @@ spinner() {
         for i in $(seq 0 7); do
             echo -ne "${spinstr:$i:1}"
             sleep $delay
-            echo -ne "\b"
+            echo -ne "\\b"
         done
     done
     echo -e "${GREEN}✓${NC}"
@@ -377,7 +376,7 @@ check_dependencies() {
         log "Installing missing dependencies..."
         
         # تحديث apt مع تجاهل أخطاء المستودعات المعطوبة
-        apt-get update -y 2>&1 | grep -v "nodesource\|NodeSource" >> "$INSTALL_LOG" 2>&1 || {
+        apt-get update -y 2>&1 | grep -v "nodesource\\|NodeSource" >> "$INSTALL_LOG" 2>&1 || {
             warn "Some repositories had issues (likely Node.js), but continuing..."
         }
         
@@ -879,12 +878,12 @@ obtain_ssl_http() {
     # Attempt HTTP challenge
     log "Requesting SSL certificate via HTTP challenge..."
     
-    local certbot_cmd="certbot certonly --standalone \
-        -d '$domain' \
-        --non-interactive \
-        --agree-tos \
-        -m '$email' \
-        --preferred-challenges http \
+    local certbot_cmd="certbot certonly --standalone \\
+        -d '$domain' \\
+        --non-interactive \\
+        --agree-tos \\
+        -m '$email' \\
+        --preferred-challenges http \\
         --http-01-port 80"
     
     debug "Running: $certbot_cmd"
@@ -1126,7 +1125,7 @@ EOF
         # Update main Nginx config
         if grep -q "listen 80;" "$nginx_conf"; then
             # Add SSL listen directive
-            sed -i "s|listen 80;|listen 80;\n    listen 443 ssl http2;\n    ssl_certificate $cert_path;\n    ssl_certificate_key $key_path;|" "$nginx_conf"
+            sed -i "s|listen 80;|listen 80;\\n    listen 443 ssl http2;\\n    ssl_certificate $cert_path;\\n    ssl_certificate_key $key_path;|" "$nginx_conf"
             
             # Add HTTP to HTTPS redirect
             local redirect_conf="/etc/nginx/snippets/redirect-${domain}.conf"
@@ -1140,7 +1139,7 @@ EOF
             
             # Include redirect in main config
             if ! grep -q "redirect-${domain}" "/etc/nginx/nginx.conf"; then
-                sed -i '/http {/a\    include /etc/nginx/snippets/redirect-*.conf;' /etc/nginx/nginx.conf
+                sed -i '/http {/a\\    include /etc/nginx/snippets/redirect-*.conf;' /etc/nginx/nginx.conf
             fi
         fi
         
@@ -1356,31 +1355,31 @@ set timeout 30
 spawn mysql_secure_installation
 
 expect "Enter current password for root (enter for none):"
-send "\r"
+send "\\r"
 
 expect "Switch to unix_socket authentication"
-send "n\r"
+send "n\\r"
 
 expect "Change the root password?"
-send "y\r"
+send "y\\r"
 
 expect "New password:"
-send "${MYSQL_ROOT_PASS}\r"
+send "${MYSQL_ROOT_PASS}\\r"
 
 expect "Re-enter new password:"
-send "${MYSQL_ROOT_PASS}\r"
+send "${MYSQL_ROOT_PASS}\\r"
 
 expect "Remove anonymous users?"
-send "y\r"
+send "y\\r"
 
 expect "Disallow root login remotely?"
-send "y\r"
+send "y\\r"
 
 expect "Remove test database and access to it?"
-send "y\r"
+send "y\\r"
 
 expect "Reload privilege tables now?"
-send "y\r"
+send "y\\r"
 
 expect eof
 EOF
@@ -1576,7 +1575,7 @@ server {
         fastcgi_pass unix:/run/php/php${PHP_VERSION}-fpm.sock;
         fastcgi_index index.php;
         include fastcgi_params;
-        fastcgi_param PHP_VALUE "upload_max_filesize = 100M \n post_max_size=100M";
+        fastcgi_param PHP_VALUE "upload_max_filesize = 100M \\n post_max_size=100M";
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         fastcgi_param HTTP_PROXY "";
         fastcgi_intercept_errors off;
@@ -1859,17 +1858,17 @@ install_docker() {
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
     
     # Add Docker repository
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    echo \\
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \\
       $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
     
     # Install Docker
     apt-get update -y >> "$INSTALL_LOG" 2>&1
-    apt-get install -y \
-        docker-ce \
-        docker-ce-cli \
-        containerd.io \
-        docker-compose-plugin \
+    apt-get install -y \\
+        docker-ce \\
+        docker-ce-cli \\
+        containerd.io \\
+        docker-compose-plugin \\
         >> "$INSTALL_LOG" 2>&1
     
     # Start and enable Docker
@@ -1885,12 +1884,12 @@ install_docker() {
 install_kvm_support() {
     log "Installing KVM support for LumenVM..."
     
-    apt-get install -y \
-        qemu-kvm \
-        libvirt-daemon-system \
-        libvirt-clients \
-        bridge-utils \
-        virt-manager \
+    apt-get install -y \\
+        qemu-kvm \\
+        libvirt-daemon-system \\
+        libvirt-clients \\
+        bridge-utils \\
+        virt-manager \\
         >> "$INSTALL_LOG" 2>&1
     
     # Add user to groups
@@ -2054,7 +2053,7 @@ server {
         fastcgi_pass unix:/run/php/php${PHP_VERSION}-fpm.sock;
         fastcgi_index index.php;
         include fastcgi_params;
-        fastcgi_param PHP_VALUE "upload_max_filesize = 100M \n post_max_size=100M";
+        fastcgi_param PHP_VALUE "upload_max_filesize = 100M \\n post_max_size=100M";
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         fastcgi_param HTTP_PROXY "";
         fastcgi_intercept_errors off;
@@ -2408,9 +2407,9 @@ EOF
         local site_name
         site_name=$(basename "$site")
         sed -i '/^server {/,/^}/ {
-            /location ~ \\\.php\$/ {
-                a\        fastcgi_buffers 16 16k;
-                a\        fastcgi_buffer_size 32k;
+            /location ~ \\\\.php\$/ {
+                a\\        fastcgi_buffers 16 16k;
+                a\\        fastcgi_buffer_size 32k;
             }
         }' "$site"
     done
@@ -2881,18 +2880,18 @@ ssl_menu() {
             
             case $ssl_component in
                 1)
-                    [[ -n "$PANEL_DOMAIN" && -n "$PANEL_EMAIL" ]] && \
-                        obtain_ssl_certificate "$PANEL_DOMAIN" "$PANEL_EMAIL" "auto" "panel" || \
+                    [[ -n "$PANEL_DOMAIN" && -n "$PANEL_EMAIL" ]] && \\
+                        obtain_ssl_certificate "$PANEL_DOMAIN" "$PANEL_EMAIL" "auto" "panel" || \\
                         error "Panel domain or email not configured"
                     ;;
                 2)
-                    [[ -n "$WINGS_DOMAIN" && -n "$WINGS_EMAIL" ]] && \
-                        obtain_ssl_certificate "$WINGS_DOMAIN" "$WINGS_EMAIL" "auto" "wings" || \
+                    [[ -n "$WINGS_DOMAIN" && -n "$WINGS_EMAIL" ]] && \\
+                        obtain_ssl_certificate "$WINGS_DOMAIN" "$WINGS_EMAIL" "auto" "wings" || \\
                         error "Wings domain or email not configured"
                     ;;
                 3)
-                    [[ -n "$CTRL_DOMAIN" && -n "$CTRL_EMAIL" ]] && \
-                        obtain_ssl_certificate "$CTRL_DOMAIN" "$CTRL_EMAIL" "auto" "ctrlpanel" || \
+                    [[ -n "$CTRL_DOMAIN" && -n "$CTRL_EMAIL" ]] && \\
+                        obtain_ssl_certificate "$CTRL_DOMAIN" "$CTRL_EMAIL" "auto" "ctrlpanel" || \\
                         error "CtrlPanel domain or email not configured"
                     ;;
                 4)
@@ -2957,7 +2956,7 @@ backup_menu() {
             echo
             echo -e "${INFO_COLOR}Available Backups:${NC}"
             local backups=()
-            while IFS= read -r -d $'\0' backup; do
+            while IFS= read -r -d $'\\0' backup; do
                 backups+=("$backup")
             done < <(find "$BACKUP_DIR" -name "*.tar.gz" -print0 | sort -zr)
             
@@ -2992,8 +2991,8 @@ backup_menu() {
         3)
             echo
             echo -e "${INFO_COLOR}Available Backups:${NC}"
-            find "$BACKUP_DIR" -name "*.tar.gz" -exec ls -lh {} \; 2>/dev/null | \
-                awk '{print $9 " (" $5 ")"}' | sed "s|$BACKUP_DIR/||" || \
+            find "$BACKUP_DIR" -name "*.tar.gz" -exec ls -lh {} \\; 2>/dev/null | \\
+                awk '{print $9 " (" $5 ")"}' | sed "s|$BACKUP_DIR/||" || \\
                 echo -e "${YELLOW}No backups found${NC}"
             ;;
         4) return ;;
@@ -3117,7 +3116,7 @@ install_theme() {
         INSTALLED_THEMES+=("$theme_name")
         
         # Remove duplicates and sort
-        INSTALLED_THEMES=($(echo "${INSTALLED_THEMES[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
+        INSTALLED_THEMES=($(echo "${INSTALLED_THEMES[@]}" | tr ' ' '\\n' | sort -u | tr '\\n' ' '))
         
         ok "Theme $theme_name installed successfully"
         return 0
@@ -3330,9 +3329,9 @@ install_blueprint_manager() {
     }
     
     # تثبيت الحزم الأساسية فقط
-    DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        ca-certificates curl git gnupg unzip wget zip jq \
-        lsb-release software-properties-common apt-transport-https \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \\
+        ca-certificates curl git gnupg unzip wget zip jq \\
+        lsb-release software-properties-common apt-transport-https \\
         >> "$INSTALL_LOG" 2>&1 || {
         error "Failed to install system dependencies"
         return 1
@@ -3348,11 +3347,11 @@ install_blueprint_manager() {
     mkdir -p /etc/apt/keyrings
     
     # تحميل وإضافة مفتاح NodeSource GPG
-    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \\
         | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg >> "$INSTALL_LOG" 2>&1
     
     # إضافة مستودع Node.js 20
-    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" \\
         | tee /etc/apt/sources.list.d/nodesource.list >> "$INSTALL_LOG" 2>&1
     
     # تحديث وتثبيت Node.js
@@ -3420,7 +3419,7 @@ install_blueprint_manager() {
     }
     
     local dl_url
-    dl_url=$(echo "$release_info" | jq -r '.assets[]? | select(.browser_download_url|test("\\.zip$")) | .browser_download_url' | head -n1)
+    dl_url=$(echo "$release_info" | jq -r '.assets[]? | select(.browser_download_url|test("\\\\.zip\$")) | .browser_download_url' | head -n1)
     
     if [[ -z "$dl_url" || "$dl_url" == "null" ]]; then
         error "Could not determine Blueprint download URL"
@@ -3704,7 +3703,7 @@ fix_nodejs_conflicts() {
     fi
     
     # تحديث apt بدون أخطاء
-    apt-get update -y 2>&1 | grep -v "nodesource\|E:" >> "$INSTALL_LOG" 2>&1 || {
+    apt-get update -y 2>&1 | grep -v "nodesource\\|E:" >> "$INSTALL_LOG" 2>&1 || {
         warn "Some apt repositories had issues, but continuing..."
     }
     
@@ -3922,11 +3921,11 @@ save_config_safe() {
 {
     "SCRIPT_VERSION": "${SCRIPT_VERSION}",
     "BLUEPRINT_INSTALLED": ${BLUEPRINT_INSTALLED:-false},
-    "INSTALLED_THEMES": $(printf '%s\n' "${INSTALLED_THEMES[@]}" | jq -R . | jq -s . || echo '[]'),
+    "INSTALLED_THEMES": $(printf '%s\\n' "${INSTALLED_THEMES[@]}" | jq -R . | jq -s . || echo '[]'),
     "SYSTEM_OPTIMIZED": ${SYSTEM_OPTIMIZED:-false},
     "SSL_MANAGED": ${SSL_MANAGED:-false},
     "LAST_BACKUP": "${LAST_BACKUP:-}",
-    "LAST_UPDATE": "$(date +%Y-%m-%d\ %H:%M:%S)"
+    "LAST_UPDATE": "$(date +%Y-%m-%d\\ %H:%M:%S)"
 }
 EOF
     )
@@ -4566,6 +4565,9 @@ uninstall_theme() {
     return 0
 }
 
+# ============================================
+# MODIFIED THEME MANAGEMENT MENU
+# ============================================
 # ============================================
 # MODIFIED THEME MANAGEMENT MENU
 # ============================================
