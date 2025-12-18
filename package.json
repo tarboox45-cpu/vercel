@@ -1,0 +1,20 @@
+{
+  "name": "tarboo-protected-installer",
+  "version": "6.0.0",
+  "description": "Password protected TARBOO Management Suite installer",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.x"
+  },
+  "keywords": [
+    "tarboo",
+    "pterodactyl",
+    "server-management",
+    "installer"
+  ]
+}
